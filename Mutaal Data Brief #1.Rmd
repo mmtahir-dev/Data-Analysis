@@ -1,0 +1,580 @@
+---
+title: 'Data Brief #1'
+author: "Mutaal Tahir"
+date: "`r Sys.Date()`"
+output: pdf_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+# Research Topic and Question
+
+The topic that I plan on analyzing is the difference in opinions towards
+government response and restrictions due to the COVID-19 pandemic among
+people from rural and urban Alberta. To address this topic, I plan on
+analyzing the September 2021 Alberta Viewpoint Dataset. The motivation
+behind choosing this data set is that it marked over a year of COVID-19
+restrictions being in place in Alberta and I aim for finding how they
+have felt so far with the government\'s response to the pandemic
+particularly from a rural/urban perspective. Do the opinions of rural
+residents differ from their counterparts in the urban areas or do they
+feel similarly? If they have differences, where do these differences
+mainly come from?
+
+We know from prior research that there has been a rural urban divide
+present in Alberta (Banack 2021, Epp 2019). This divide has existed due
+to various factors and has caused rural residents to feel overlooked,
+looked down upon and treated unfairly ​​(Banack, 2021). Epp (2019) argues
+that rural sensibility is hard to find in the government caucus, which
+reflects on Alberta becoming an increasingly urban province compared to
+a rural one. COVID-19 brought more issues that may have fueled this
+divide. Among these issues include shining a light on Alberta\'s rural
+healthcare system which has already had issues such as the lack of
+access for osteoarthritis care despite the high prevalence (Liu et al.,
+2022). It was reported by the Canadian Medical Association in 2013 that
+21% of the Canadian population lives in rural areas however only 9.4% of
+general practitioners and 3% of specialists do (CMA, 2013). COVID-19
+causes many infected individuals to be hospitalized which could prove to
+be a problem for the already understaffed rural healthcare system.
+Torrie et al. (2021) highlights how there have been vaccine distribution
+issues in rural Alberta in the past giving an example of the 2009 HINI
+influenza pandemic.
+
+I anticipate exploring whether did COVID-19 further increase the divide
+where rural residents felt a difference in the government response
+compared to the urban residents. How do they find their issues being
+handled and whom do they feel is doing a better job?  Do Albertans feel
+the federal government is handling the pandemic well or is the
+provincial government doing a better job? Furthermore, I set out to
+explore how do rural and urban residents personally feel about policies
+such as masking or vaccine mandates.
+
+# Data
+
+The 2021 Alberta Viewpoint Survey contains data from 1204 respondents.
+Data was collected through a roughly 15-minute voluntary survey. Consent
+of respondents was taken before the survey began. Respondents included
+individuals from various backgrounds, age, demographics and genders. The
+survey had 8 sections namely:
+
+1.  Demographics
+
+2.  Electoral Politics
+
+3.  Campaign Finances and Local Elections
+
+4.  Dialogue and Polarization
+
+5.  Federalism
+
+6.  The COVID-19 Pandemic
+
+7.  Economic Perceptions
+
+8.  Identity and Discrimination
+
+There was missing information in the responses and was deleted using
+listwise deletion in order to have clean data to analyze.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r Reading Libraries, include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(descr)
+library(DescTools)
+library(survey)
+```
+
+```{r Display Dimensions}
+d1 <- read.csv("ViewpointAB_Sept2021_Survey_Data.csv",header=TRUE)
+d2 <- subset(d1,select=c(Q4,Q60r1,Q60r2,Q61r1,Q61r2,Q67,Q68,Q70,Q71))
+d3 <- subset(d2,complete.cases(d2),drop=TRUE)
+dim(d1)
+```
+
+# Key Measures
+
+For ease or reading and simplicity I will divide each variable into it's
+own category and describe it.
+
+## Area 
+
+Areas are divided into three categories: urban, suburban and rural.
+Urban has been coded into '1', Suburban '2' and rural '3'. I have
+recoded them into their respective names so that the viewer does not
+have to look back and forth for what each number represents. I also
+counted suburban residents as urban residents in this project due to
+their close proximity with urban areas.
+
+```{r}
+d3$zone=recode(d3$Q4,`1`="Urban",`2`="Urban",`3`="Rural")
+
+round(prop.table(table(d3$zone)) * 100, 2)
+
+ggplot(data = d3, aes(x = zone, y = ..count.. / sum(..count..))) + geom_bar(fill = "darkgreen", color = "black") + scale_y_continuous(labels = scales::percent, limits = c(0,1)) +
+labs(x = "Zone",
+y = "Percentage",
+title = "Participants by Zone") +
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+
+Data shows that 87.38% of our respondents are from urban areas whereas
+only 12.62% are from rural areas. Since this is a predictor variable and
+I base my conclusions on zone area, I will further subset my data into
+rural and urban residents. This will allow me to separately measure
+responses from both sides.
+
+```{r}
+d4 <- subset(d3, zone=="Urban")
+d5 <- subset(d3, zone=="Rural")
+```
+
+## Trust of Leader (Justin Trudeau the Prime Minister) 
+
+This is an outcome variable I will need to predict how much do rural vs
+urban Albertans trust the Prime Minister handling the pandemic. Values
+are in numbers and were recoded as: '1' No trust, '2' Little Trust, '3'
+A lot of Trust, '4' Full Trust, '98' Not Sure.
+
+```{r Trust of JT by Urban Residents}
+d4$trust_jt=recode(d4$Q60r1,`1`="No Trust",`2`="Little Trust",`3`="A lot of Trust",`4`="Full Trust",`98`="Not Sure")
+d4$trust_jt <- factor(d4$trust_jt,c("No Trust","Little Trust","A lot of Trust","Full Trust","Not Sure"))
+freq(ordered(d4$trust_jt), plot = FALSE)
+Mode <- function(x){
+  a=table(x)
+  return(a[which.max(a)])
+}
+Mode(d4$trust_jt)
+
+ggplot(data = d4, aes(x = trust_jt, y = ..count.. / sum(..count..))) + geom_bar(fill = "skyblue", color = "black") + scale_y_continuous(labels = scales::percent, limits = c(0,0.4)) +
+labs(x = "Trust Level",
+y = "Percentage",
+title = "Trust Justin Trudeau's Handling of the pandemic by Urban Residents") +
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+35.84% of Urban residents had to trust on Justin Trudeau's handling of
+this pandemic followed by 30.13% having little trust, 21.77% A lot of
+trust, 10.17% Full trust and 2.09% not sure.
+
+No trust was the most common response with 377 votes.
+
+```{r Trust of JT by Rural Residents}
+d5$trust_jt=recode(d5$Q60r1,`1`="No Trust",`2`="Little Trust",`3`="A lot of Trust",`4`="Full Trust",`98`="Not Sure")
+d5$trust_jt <- factor(d5$trust_jt,c("No Trust","Little Trust","A lot of Trust","Full Trust","Not Sure"))
+freq(ordered(d5$trust_jt), plot = FALSE)
+Mode <- function(x){
+  a=table(x)
+  return(a[which.max(a)])
+}
+Mode(d5$trust_jt)
+
+ggplot(data = d5, aes(x = trust_jt, y = ..count.. / sum(..count..))) + geom_bar(fill = "red", color = "black") + scale_y_continuous(labels = scales::percent, limits = c(0,0.6)) +
+labs(x = "Trust Level",
+y = "Percentage",
+title = "Trust Justin Trudeau's Handling of the pandemic by Rural Residents") +
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+53.29% of Rural residents had to trust on Justin Trudeau's handling of
+this pandemic followed by 31.58% having little trust, 11.84% A lot of
+trust, 3.29% Full trust. None of the respondents choose "Not sure".
+
+No trust was the most common response with 81 votes.
+
+## Trust of Leader (Jason Kenny then Premier of Alberta) 
+
+This is an outcome variable I will need to predict how much do rural vs
+urban Albertans trust the Premier handling the pandemic. Values are in
+numbers and were recoded as: '1' No trust, '2' Little Trust, '3' A lot
+of Trust, '4' Full Trust, '98' Not Sure.
+
+```{r Trust of JK by Urban Residents}
+d4$trust_jk=recode(d4$Q60r2,`1`="No Trust",`2`="Little Trust",`3`="A lot of Trust",`4`="Full Trust",`98`="Not Sure")
+d4$trust_jk <- factor(d4$trust_jk,c("No Trust","Little Trust","A lot of Trust","Full Trust","Not Sure"))
+freq(ordered(d4$trust_jk), plot = FALSE)
+Mode <- function(x){
+  a=table(x)
+  return(a[which.max(a)])
+}
+Mode(d4$trust_jk)
+
+ggplot(data = d4, aes(x = trust_jk, y = ..count.. / sum(..count..))) + geom_bar(fill = "skyblue", color = "black") + scale_y_continuous(labels = scales::percent, limits = c(0,0.7)) +
+labs(x = "Trust Level",
+y = "Percentage",
+title = "Trust Jason Kenny's Handling of the pandemic by Urban Residents") +
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+63.40% of Urban residents had to trust on Jason Kenny's handling of this
+pandemic followed by 22.24% having little trust, 9.03% A lot of trust,
+2.76% Full trust and 2.57% not sure.
+
+No trust was the most common response with 667 votes.
+
+```{r Trust of JK by Rural Residents}
+d5$trust_jk=recode(d5$Q60r2,`1`="No Trust",`2`="Little Trust",`3`="A lot of Trust",`4`="Full Trust",`98`="Not Sure")
+d5$trust_jk <- factor(d5$trust_jk,c("No Trust","Little Trust","A lot of Trust","Full Trust","Not Sure"))
+freq(ordered(d5$trust_jk), plot = FALSE)
+Mode <- function(x){
+  a=table(x)
+  return(a[which.max(a)])
+}
+Mode(d5$trust_jk)
+
+ggplot(data = d5, aes(x = trust_jk, y = ..count.. / sum(..count..))) + geom_bar(fill = "red", color = "black") + scale_y_continuous(labels = scales::percent, limits = c(0,0.7)) +
+labs(x = "Trust Level",
+y = "Percentage",
+title = "Trust Jason Kenny's Handling of the pandemic by Rural Residents") +
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+61.84% of Rural residents had to trust on Jason Kenny's handling of this
+pandemic followed by 28.95% having little trust, 7.89% A lot of trust,
+0.65% Full trust and 0.65% not sure.
+
+No trust was the most common response with 94 votes.
+
+## Performance of Government (Federal) 
+
+This is an outcome variable I will need to predict how well do rural vs
+urban Albertans think the Federal government handled the pandemic.
+Values are in numbers and were recoded as: '1' No trust, '2' Little
+Trust, '3' A lot of Trust, '4' Full Trust, '98' Not Sure.
+
+```{r Performance (Federal) Rating by Urban Residents}
+d4$trust_fg=recode(d4$Q61r1,`1`="Very bad",`2`="Bad",`3`="Good",`4`="Very Good")
+d4$trust_fg <- factor(d4$trust_fg,c("Very bad","Bad","Good","Very Good"))
+freq(ordered(d4$trust_fg), plot = FALSE)
+Mode <- function(x){
+  a=table(x)
+  return(a[which.max(a)])
+}
+Mode(d4$trust_fg)
+
+ggplot(data = d4, aes(x = trust_fg, y = ..count.. / sum(..count..))) + geom_bar(fill = "skyblue", color = "black") + scale_y_continuous(labels = scales::percent, limits = c(0,0.7)) +
+labs(x = "Performance Rating",
+y = "Percentage",
+title = "Pandemic Performance Rating of Federal Government by Urban Residents") +
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+21.48% of urban respondents thought the federal government is doing a
+very bad job handling the pandemic. 23.95% thought it was doing a bad
+job whereas 46% the federal government was doing a good job making it
+the most popular answer with 484 votes. 8.56% thought the government was
+doing a very good job.
+
+```{r Performance (Federal) Rating by Rural Residents}
+d5$trust_fg=recode(d5$Q61r1,`1`="Very bad",`2`="Bad",`3`="Good",`4`="Very Good")
+d5$trust_fg <- factor(d5$trust_fg,c("Very bad","Bad","Good","Very Good"))
+freq(ordered(d5$trust_fg), plot = FALSE)
+Mode <- function(x){
+  a=table(x)
+  return(a[which.max(a)])
+}
+Mode(d5$trust_fg)
+
+ggplot(data = d5, aes(x = trust_fg, y = ..count.. / sum(..count..))) + geom_bar(fill = "red", color = "black") + scale_y_continuous(labels = scales::percent, limits = c(0,0.4)) +
+labs(x = "Performance Rating",
+y = "Percentage",
+title = "Pandemic Performance Rating of Federal Government by Rural Residents") +
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+31.58% of rural respondents thought the federal government is doing a
+very bad job handling the pandemic. 28.28% thought it was doing a bad
+job whereas 38.2% the federal government was doing a good job making it
+the most popular answer with 58 votes. 1.97% thought the government was
+doing a very good job.
+
+## Performance of Government (Provincial) 
+
+This is an outcome variable I will need to predict how well do rural vs
+urban Albertans think the provincial government handled the pandemic.
+Values are in numbers and were recoded as: '1' No trust, '2' Little
+Trust, '3' A lot of Trust, '4' Full Trust, '98' Not Sure.
+
+```{r Performance (Provincial) Rating by Urban Residents}
+d4$trust_pg=recode(d4$Q61r2,`1`="Very bad",`2`="Bad",`3`="Good",`4`="Very Good")
+d4$trust_pg <- factor(d4$trust_pg,c("Very bad","Bad","Good","Very Good"))
+freq(ordered(d4$trust_pg), plot = FALSE)
+Mode <- function(x){
+  a=table(x)
+  return(a[which.max(a)])
+}
+Mode(d4$trust_pg)
+
+ggplot(data = d4, aes(x = trust_pg, y = ..count.. / sum(..count..))) + geom_bar(fill = "skyblue", color = "black") + scale_y_continuous(labels = scales::percent, limits = c(0,0.7)) +
+labs(x = "Performance Rating",
+y = "Percentage",
+title = "Pandemic Performance Rating of Provincial Government by Urban Residents") +
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+54.75% of urban respondents thought the provincial government is doing a
+very bad job handling the pandemic making it the most popular answer
+with 576 votes. 26.71% thought it was doing a bad job whereas 15.5% the
+federal government was doing a good job . 3.0% thought the provincial
+government was doing a very good job.
+
+```{r Performance (Provincial) score by Rural Residents}
+d5$trust_pg=recode(d5$Q61r2,`1`="Very bad",`2`="Bad",`3`="Good",`4`="Very Good")
+d5$trust_pg <- factor(d5$trust_pg,c("Very bad","Bad","Good","Very Good"))
+freq(ordered(d5$trust_pg), plot = FALSE)
+Mode <- function(x){
+  a=table(x)
+  return(a[which.max(a)])
+}
+Mode(d5$trust_pg)
+
+ggplot(data = d5, aes(x = trust_pg, y = ..count.. / sum(..count..))) + geom_bar(fill = "red", color = "black") + scale_y_continuous(labels = scales::percent, limits = c(0,0.7)) +
+labs(x = "Performance Rating",
+y = "Percentage",
+title = "Pandemic Performance Rating of Provincial Government by Rural Residents") +
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+50.66% of urban respondents thought the provincial government is doing a
+very bad job handling the pandemic making it the most popular answer
+with 77 votes. 32.23% thought it was doing a bad job whereas 16.45% the
+federal government was doing a good job . 0.66% thought the provincial
+government was doing a very good job.
+
+## Support of businesses requiring proof of vaccination (Q67) 
+
+This is an outcome variable I will need to predict how well do rural vs
+urban Albertans support the government law allowing businesses to stay
+open provided they require proof of vaccination of negative COVID-19
+test result . Values are in numbers and were recoded as: '1' Strongly
+support, '2' Somewhat support, '3' Neither support or oppose, '4'
+Somewhat oppose, '5' Strongly oppose.
+
+```{r Level of support (Business Vaccine) Urban}
+d4$business_vac=recode(d4$Q67,`1`="Strongly support",`2`="Somewhat support",`3`="Neither support or oppose",`4`="Somewhat oppose", `5`="Strongly oppose")
+d4$business_vac <- factor(d4$business_vac,c("Strongly support","Somewhat support","Neither support or oppose","Somewhat oppose","Strongly oppose"))
+freq(ordered(d4$business_vac), plot = FALSE)
+Mode <- function(x){
+  a=table(x)
+  return(a[which.max(a)])
+}
+Mode(d4$business_vac)
+
+ggplot(data = d4, aes(x = business_vac, y = ..count.. / sum(..count..))) + geom_bar(fill = "skyblue", color = "black") + scale_y_continuous(labels = scales::percent, limits = c(0,0.7)) +
+labs(x = "Support Level",
+y = "Percentage",
+title = "Vaccine Proof Support for Businesses in Urban Alberta") +
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+49.72% of urban respondents strongly supported businesses requiring
+proof of vaccination or negative COVID-19 tests making it the most
+popular response with 523 votes. 23.57% supported the statement,
+followed by 9.8% being neutral, 4.28% opposing and 12.64% strongly
+opposing the statement.
+
+```{r Level of support (Business Vaccine) Rural}
+d5$business_vac=recode(d5$Q67,`1`="Strongly support",`2`="Somewhat support",`3`="Neither support or oppose",`4`="Somewhat oppose", `5`="Strongly oppose")
+d5$business_vac <- factor(d5$business_vac,c("Strongly support","Somewhat support","Neither support or oppose","Somewhat oppose","Strongly oppose"))
+freq(ordered(d5$business_vac), plot = FALSE)
+Mode <- function(x){
+  a=table(x)
+  return(a[which.max(a)])
+}
+Mode(d5$business_vac)
+
+ggplot(data = d5, aes(x = business_vac, y = ..count.. / sum(..count..))) + geom_bar(fill = "red", color = "black") + scale_y_continuous(labels = scales::percent, limits = c(0,0.7)) +
+labs(x = "Support Level",
+y = "Percentage",
+title = "Vaccine Proof Support for Businesses in Rural Alberta") +
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+46.1% of rural respondents strongly supported businesses requiring proof
+of vaccination or negative COVID-19 tests making it the most popular
+response with 70 votes. 18.42% supported the statement, followed by
+9.87% being neutral, 5.92% opposing and 19.74% strongly opposing the
+statement.
+
+## Support for vaccine passports (Q68) 
+
+This is an outcome variable I will need to predict how well do rural vs
+urban Albertans support vaccine passports. Values are in numbers and
+were recoded as: '1' Strongly support, '2' Somewhat support, '3' Neither
+support or oppose, '4' Somewhat oppose, '5' Strongly oppose.
+
+```{r Level of support (Vaccine pass) Urban}
+d4$vac_pass=recode(d4$Q68,`1`="Strongly support",`2`="Somewhat support",`3`="Neither support or oppose",`4`="Somewhat oppose", `5`="Strongly oppose")
+d4$vac_pass <- factor(d4$vac_pass,c("Strongly support","Somewhat support","Neither support or oppose","Somewhat oppose","Strongly oppose"))
+freq(ordered(d4$vac_pass), plot = FALSE)
+Mode <- function(x){
+  a=table(x)
+  return(a[which.max(a)])
+}
+Mode(d4$vac_pass)
+
+ggplot(data = d4, aes(x = vac_pass, y = ..count.. / sum(..count..))) + geom_bar(fill = "skyblue", color = "black") + scale_y_continuous(labels = scales::percent, limits = c(0,0.7)) +
+labs(x = "Support Level",
+y = "Percentage",
+title = "Support for Vaccine Passport Urban Alberta") +
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+62.74% of urban residents supported vaccine passports making it the most
+popular option with 660 votes. This was followed by 14.45% somewhat
+supporting, 7.32% neutral, 2.95% opposing and 12.55% strongly opposing.
+
+```{r Level of support (Vaccine pass) Rural}
+d5$vac_pass=recode(d5$Q68,`1`="Strongly support",`2`="Somewhat support",`3`="Neither support or oppose",`4`="Somewhat oppose", `5`="Strongly oppose")
+d5$vac_pass <- factor(d5$vac_pass,c("Strongly support","Somewhat support","Neither support or oppose","Somewhat oppose","Strongly oppose"))
+freq(ordered(d5$vac_pass), plot = FALSE)
+Mode <- function(x){
+  a=table(x)
+  return(a[which.max(a)])
+}
+Mode(d5$vac_pass)
+
+ggplot(data = d5, aes(x = vac_pass, y = ..count.. / sum(..count..))) + geom_bar(fill = "red", color = "black") + scale_y_continuous(labels = scales::percent, limits = c(0,0.7)) +
+labs(x = "Support Level",
+y = "Percentage",
+title = "Support for Vaccine Passport Rural Alberta") +
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+55.26% of rural residents supported vaccine passports making it the most
+popular option with 84 votes. This was followed by 9.87% somewhat
+supporting, 7.23% neutral, 5.26% opposing and 22.37% strongly opposing.
+
+## Feelings on current restrictions (Q70) 
+
+This is an outcome variable I will need to predict how well do rural vs
+urban Albertans feel about current restrictions. Values are in numbers
+and were recoded as: '1' Too harsh, '2' Too lenient, '3' Just about
+right.
+
+```{r Level of support (Current Restrictions) Urban}
+d4$feel_cr=recode(d4$Q70,`1`="Too harsh",`2`="Too lenient",`3`="Just about right")
+d4$feel_cr <- factor(d4$feel_cr,c("Too harsh","Too lenient","Just about right"))
+freq(ordered(d4$feel_cr), plot = FALSE)
+Mode <- function(x){
+  a=table(x)
+  return(a[which.max(a)])
+}
+Mode(d4$feel_cr)
+
+ggplot(data = d4, aes(x = feel_cr, y = ..count.. / sum(..count..))) + geom_bar(fill = "skyblue", color = "black") + scale_y_continuous(labels = scales::percent, limits = c(0,0.7)) +
+labs(x = "Feelings",
+y = "Percentage",
+title = "Feelings on Current Restrictions Urban Alberta") +
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+14.83% of Urban residents found current restrictions to be too harsh
+followed by 57.6% saying they are too lenient making it the most common
+response with 606 votes. 27.57% found them to be just about right.
+
+```{r Level of support (Current Restrictions) Rural}
+d5$feel_cr=recode(d5$Q70,`1`="Too harsh",`2`="Too lenient",`3`="Just about right")
+d5$feel_cr <- factor(d5$feel_cr,c("Too harsh","Too lenient","Just about right"))
+freq(ordered(d5$feel_cr), plot = FALSE)
+Mode <- function(x){
+  a=table(x)
+  return(a[which.max(a)])
+}
+Mode(d5$feel_cr)
+
+ggplot(data = d5, aes(x = feel_cr, y = ..count.. / sum(..count..))) + geom_bar(fill = "red", color = "black") + scale_y_continuous(labels = scales::percent, limits = c(0,0.7)) +
+labs(x = "Feelings",
+y = "Percentage",
+title = "Feelings on Current Restrictions Rural Alberta") +
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+23.03% of rural residents found current restrictions to be too harsh
+followed by 53.95% saying they are too lenient making it the most common
+response with 82 votes. 23.03% found them to be just about right.
+
+## Masks: Freedom or public health (Q71) 
+
+This is an outcome variable I will need to predict how do rural vs urban
+Albertans feel about masks. Does freedom come before public health or
+viceversa? Values are in numbers and were recoded as: '1' Freedom, '2'
+Public Health.
+
+```{r Level of support (Masks) Urban}
+d4$masks=recode(d4$Q71,`1`="Freedom",`2`="Public Health")
+d4$masks <- factor(d4$masks,c("Freedom","Public Health"))
+freq(ordered(d4$masks), plot = FALSE)
+Mode <- function(x){
+  a=table(x)
+  return(a[which.max(a)])
+}
+Mode(d4$masks)
+
+ggplot(data = d4, aes(x = masks, y = ..count.. / sum(..count..))) + geom_bar(fill = "skyblue", color = "black") + scale_y_continuous(labels = scales::percent, limits = c(0,0.9)) +
+labs(x = "Freedom vs Public Health",
+y = "Percentage",
+title = "Masks: Freedom or Public Health Urban Alberta") +
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+14.35% of Urban residents choose freedom over public health when
+discussing about face masks while 85.65% choose public health making it
+the most common response with 901 votes.
+
+```{r Level of support (Masks) Rural}
+d5$masks=recode(d5$Q71,`1`="Freedom",`2`="Public Health")
+d5$masks <- factor(d5$masks,c("Freedom","Public Health"))
+freq(ordered(d5$masks), plot = FALSE)
+Mode <- function(x){
+  a=table(x)
+  return(a[which.max(a)])
+}
+Mode(d5$masks)
+
+ggplot(data = d5, aes(x = masks, y = ..count.. / sum(..count..))) + geom_bar(fill = "red", color = "black") + scale_y_continuous(labels = scales::percent, limits = c(0,0.9)) +
+labs(x = "Freedom vs Public Health",
+y = "Percentage",
+title = "Masks: Freedom or Public Health Rural Albert") +
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+18.42% of rural residents choose freedom over public health when
+discussing about face masks while 81.58% choose public health making it
+the most common response with 124 votes.
+
+## References
+
+Banack, C. (2020, October 26). Ethnography and Political Opinion:
+Identity, Alienation  and Anti-establishmentarianism in Rural Alberta.
+Canadian Journal of Political Science, 54(1), 1--22.
+<https://doi.org/10.1017/s0008423920000694>
+
+Epp, Roger. 2019. \"The End of Exceptionalism: Post-rural Politics in
+Alberta.\" In Orange Chinook: Politics in the New Alberta, ed. Duane
+Bratt, Keith Brownsey, Richard Sutherland and David Taras. Calgary:
+University of Calgary Press.
+
+Liu, X.; Seidel, J.E.; McDonald, T.; Patel, A.B.; Waters, N.; Bertazzon,
+S.; Shahid, R.; Marshall, D.A. Rural--Urban Disparities in Realized
+Spatial Access to General Practitioners, Orthopedic Surgeons, and
+Physiotherapists among People with Osteoarthritis in Alberta, Canada.
+Int. J. Environ. Res. Public Health**2022**,19,7706. https://
+doi.org/10.3390/ijerph19137706
+
+Canadian Medical Association. CMA Position Statement: Ensuring Equitable
+Access to Care: Strategies for Governments, Health System Planners, and
+the Medical Profession; Canadian Medical Association: Ottawa, ON,
+Canada, 2013.
+
+Torrie, C., Yanicki, S., Sedgwick, M., & Howard, L. (2021, February 1).
+Social justice in pandemic
+immunization policy: We\'re all in this together. *Nursing Ethics*,
+*28*(6),
+924--934. <https://doi.org/10.1177/0969733020983395>
